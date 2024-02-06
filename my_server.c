@@ -17,7 +17,7 @@
 int num_threads = 0;
 
 long fibonacci(long num){
-	if(num == 0 || num == 1)
+	if(num == 1 || num == 2)
 		return 1;
 	else
 		return fibonacci(num - 1) + fibonacci(num - 2);
@@ -41,6 +41,9 @@ int main(void){
 	long fib_ret;
 	int child_pid;	//the child is the interface
 	int err_check;
+
+	//unlink the FIFO if it's still around at the start
+	unlink(PIPE_NAME);
 
 	//creates the FIFO pipe
 	if(DEBUG_STATEMENTS)
@@ -80,6 +83,7 @@ int main(void){
 				perror("[ERROR] Attempting to read from pipe failed");
 				exit(EXIT_FAILURE);
 			}
+			printf("\n[INFO] Received from FIFO: %ld\n", fib_ret);
 			pthread_t thread_id;
 
 			pthread_create(
@@ -92,7 +96,6 @@ int main(void){
 			pthread_detach(thread_id);
 			read(pipe, &fib_ret, sizeof(long));
 		}
-
 	}
 	while(num_threads != 0){
 		printf("[INFO] Waiting for %d threads to finish...\n", num_threads);
@@ -100,12 +103,12 @@ int main(void){
 	}
 
 	//report the CPU usage of the program
-    struct rusage usage;
-    getrusage(RUSAGE_SELF, &usage);
-    printf(
+	struct rusage usage;
+	getrusage(RUSAGE_SELF, &usage);
+	printf(
 		"[INFO] Fibonacci has used %ld s %ld ms\n",
-    	usage.ru_utime.tv_sec + usage.ru_stime.tv_sec,
-    	usage.ru_utime.tv_usec + usage.ru_stime.tv_usec
+		usage.ru_utime.tv_sec + usage.ru_stime.tv_sec,
+		usage.ru_utime.tv_usec + usage.ru_stime.tv_usec
 	);
 
 	//close the pipe
